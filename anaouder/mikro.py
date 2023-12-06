@@ -37,7 +37,7 @@ def format_output(sentence, normalize=False, keep_fillers=False):
 	return sentence
 
 
-def main_mikro() -> None:
+async def main_mikro() -> None:
 	""" mikro cli entry point """
 
 	global q
@@ -70,9 +70,6 @@ def main_mikro() -> None:
 		help="Keep verbal fillers ('euh', 'beñ', 'alors', 'kwa'...)")
 	parser.add_argument("-v", "--version", action="version", version=f"%(prog)s v{VERSION}")
 	args = parser.parse_args(remaining)
-
-	# Use static_ffmpeg instead of ffmpeg
-	static_ffmpeg.add_paths()
 	
 	q = queue.Queue()
 
@@ -98,17 +95,21 @@ def main_mikro() -> None:
 				print('#' * 80)
 				print('Press Ctrl+C to stop the recording')
 				print('#' * 80)
-				
+
 				rec = KaldiRecognizer(model, args.samplerate)
 				
 				while True:
 					data = q.get()
 					if rec.AcceptWaveform(data):
 						result = eval(rec.Result())["text"]
-						if len(result) > 0:
-							print(format_output(result, normalize=args.normalize, keep_fillers=args.keep_fillers))
-							if dump_fn:
-								dump_fn.write(format_output(result, normalize=args.normalize, keep_fillers=args.keep_fillers)+'\n')
+						text = format_output(result, normalize=args.normalize, keep_fillers=args.keep_fillers)
+						print(text)
+						request = simpleobsws.Request('SendStreamCaption', {'captionText': text}) 
+
+						ret = await makeRequest(request)
+						if dump_fn is not None and len(result) > 5:
+							dump_fn.write(format_output(result)+'\n')
+							dump_fn.flush()
 
 	except KeyboardInterrupt:
 		print('\nDone')
@@ -118,4 +119,9 @@ def main_mikro() -> None:
 
 
 if __name__ == "__main__":
-	main_mikro()
+
+	loop = asyncio.get_event_loop()
+
+	loop.create_task(main_mikro())
+
+	loop.run_forever()
