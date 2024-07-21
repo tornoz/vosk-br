@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>istitloù</title>
+    <style>
+        @font-face {
+        font-family: 'OpenMoji';
+        src: URL('https://github.com/hfg-gmuend/openmoji/blob/b4972b4ca68637a7899d1539bccfc7d97ec2eede/font/picosvgz/OpenMoji-Color.SVG.ttf') format('truetype');
+        }
+
+    
+        #istitlou {
+            position: absolute;
+            bottom:50px;
+            font-size: 25pt;
+            font-weight: bold;
+            color: white;
+            width: 100%;
+            text-align: center;
+            font-family: 'Arial';
+        }
+
+        #istitlou .content-container .content .subtitle  {
+            overflow: hidden;
+        }
+        #istitlou .content-container .content .subtitle div {
+            padding : 5px;
+            background-color: black;
+            position:relative;
+            margin: auto;
+            width: fit-content;
+            max-width: 1000px;
+        }
+
+        @keyframes show-subtitle-top {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        @keyframes show-subtitle-bottom {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+
+        @keyframes hide-subtitle {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(100%);
+            }
+        }
+
+        #istitlou .content-container .content .subtitle.show-top div {
+            animation: show-subtitle-top 0.3s;
+        }
+        #istitlou .content-container .content .subtitle.show-bottom div {
+            animation: show-subtitle-bottom 0.3s;
+        }
+        #istitlou .content-container .content .subtitle.hide div {
+            animation: hide-subtitle 0.3s;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="istitlou">
+        <div class="br">
+            <span class="content-container"><!-- <img src="https://cdn.discordapp.com/emojis/472504126178066432.webp?size=128&quality=lossless"/> -->
+                <span class="content"></span>
+            </span>
+        </div>
+        <div class="fr">
+            <!-- <span class="content-container">
+                🇫🇷
+                [FR]
+                <span class="content"></span>
+            </span> -->
+        </div><!--
+        <div class="en">
+             🇬🇧 
+            <span class="content"></span>
+        </div>
+        <div class="cy">
+             🏴󠁧󠁢󠁷󠁬󠁳󠁿 -
+            <span class="content"></span>
+        </div>
+        <div class="de">
+             🇩🇪 
+            <span class="content"></span>
+        -->
+        </div>
+
+    </div>
+
+    <script>
+        var istitlou = document.getElementById('istitlou');
+        var istitlouBr = document.querySelector('#istitlou .br .content');
+        // var istitlouFR = document.querySelector('#istitlou .fr .content');
+        // var istitlouEN = document.querySelector('#istitlou .en .content');
+        // var istitlouCY = document.querySelector('#istitlou .cy .content');
+        // var istitlouDE = document.querySelector('#istitlou .de .content');
+
+        var deleteQueue = [];
+
+        var webSocket = new WebSocket("ws://localhost:8000");
+
+        var clearSubtitles = function() {
+            istitlouBr.firstElementChild.classList.add('hide');
+            nextChild = istitlouBr.firstElementChild.nextElementSibling;
+            setTimeout(function() {
+                istitlouBr.firstElementChild.remove();
+                recolorSubtitles();
+            }, 300)
+
+            if(nextChild) {
+                var time = Math.min(data.text.length * 500, 5000);
+                setTimeout(clearSubtitles, time);
+            }
+        }
+
+        var showSubtitle = function (subtitle, animation) {
+            var newSubtitleContainer = document.createElement('div');
+            var newSubtitle = document.createElement('div');
+            newSubtitleContainer.classList.add('subtitle');
+            newSubtitle.textContent = subtitle;
+            istitlouBr.appendChild(newSubtitleContainer);
+            newSubtitleContainer.appendChild(newSubtitle);
+            newSubtitleContainer.classList.add(animation);
+        }
+
+        var recolorSubtitles = function() {
+            istitlouBr.childNodes.forEach((element, index) => {
+                element.style['opacity'] = (index+1)/istitlouBr.children.length;
+            });
+        }
+
+        webSocket.onmessage = function(event) {
+            jsonData = event.data;
+            data = JSON.parse(jsonData);
+
+            if(istitlouBr.childNodes.length === 0) {
+                // var time = Math.min(data.text.length * 500, 3000);
+                var time = Math.min(data.text.length * 500, 5000);
+                setTimeout(clearSubtitles, time);
+                showSubtitle(data.text, 'show-bottom');
+            } else {
+                showSubtitle(data.text, 'show-top');
+                recolorSubtitles();
+            }
+
+            
+            
+
+            // istitlouFR.textContent = data.textfr;
+            // istitlouEN.textContent = data.texten;
+            // istitlouCY.textContent = data.textcy;
+            // istitlouDE.textContent = data.textde;
+        };
+
+        webSocket.onopen = function(event) {
+            console.log('WebSocket is open now.');
+            webSocket.send("Hello Server!");
+        };
+
+        webSocket.onclose = function(event) {
+            console.log('WebSocket is closed now.');
+        };
+
+        webSocket.onerror = function(event) {
+            console.error('WebSocket error observed:', event);
+        };
+
+
+
+
+        console.log('WebSocket setup complete');
+    </script>
+</body>
+</html>
